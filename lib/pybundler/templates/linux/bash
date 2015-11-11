@@ -1,0 +1,30 @@
+#!/bin/bash
+
+usage="$$0 [what | install]"
+
+# what?
+# ----------- TEMPLATE ----------
+
+num_dir=${num_dir}
+num_file=${num_file}
+exact_size=${bytesize}
+dirtree="${structure_string}"
+
+# ----------- END TEMPLATE ------
+
+
+# args
+if [ "$$1" = "what" ] ; then
+	printf "create: $$num_dir directories; $$num_file files; $$exact_size (bytes)\n"
+	printf "directory structure:\n$$dirtree\n"
+elif [ "$$1" = "install" ] ; then
+	echo "installing... (root: $$(pwd))"
+	# ---------- TEMPLATE
+${install_cmds}
+	# ---------- END TEMPLATE
+else
+	echo "unrecognized command"
+	echo $$usage
+fi
+
+exit 0

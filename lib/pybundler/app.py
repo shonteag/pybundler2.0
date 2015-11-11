@@ -5,6 +5,7 @@ import sys
 import os
 from os.path import join, abspath, dirname, basename, isdir, isfile
 import argparse
+import json
 
 #------------------------------------------------------------------------------
 # pybundler
@@ -44,7 +45,8 @@ def setup_bundle(args):
                           args.exn, args.ext, args.exf)
 
     if args.build:
-        build(build_config, args.workdir)
+        final_file_path = join(args.workdir, build_config['project_name']) + ".pkg"
+        build(build_config, final_file_path, args.workdir)
 
 
 def setup_build(args):
@@ -53,6 +55,16 @@ def setup_build(args):
     outputs a .sh/.bash file to be distributed
     """
     from pybundler.build import build
+
+    with open(args.target_path, 'r') as f:
+        build_config = json.load(f)
+
+    if args.workdir == "":
+        args.workdir = build_config["__workdir"]
+    final_file_path = join(args.workdir, build_config['project_name']) + ".pkg"
+
+    build(build_config, final_file_path, args.workdir)
+
 
 
 def main_bundle():
@@ -135,7 +147,18 @@ command), and generates the desired executable script for recreation of the envi
 This is usually considered STEP 2."""
     )
 
+    buildops = parser.add_argument_group('build options')
+    buildops.add_argument("--workdir",
+                          action="store", default="",
+                          help="specify a directory for output of final file")
+
+    parser.add_argument('target_path',
+                        action="store",
+                        help="provide the path to the .bundle file")
+
     args = parser.parse_args()
+
+    setup_build(args)
 
 
 

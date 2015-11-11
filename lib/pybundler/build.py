@@ -7,6 +7,7 @@ import sys
 import time
 import base64
 import json
+import string
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -119,7 +120,7 @@ def bundle(target_path,
 
         return structure, num_dir, num_file, (num_dir_exc, num_file_exc), total_size
 
-    _write("build")
+    _write("bundle")
     _write("  directory structure ... ", False)
     structure, num_dir, num_file, exc, size = _build_directory_structure(target_path, exn, ext, exf)
     _write("ok.")
@@ -127,8 +128,9 @@ def bundle(target_path,
     _write("    (excluded {0} dir, {1} files)".format(exc[0], exc[1]))
 
     # rename the toplevel
-    structure[toplevel] = structure[basename(target_path)]
-    del structure[basename(target_path)]
+    if toplevel != basename(target_path):
+        structure[toplevel] = structure[basename(target_path)]
+        del structure[basename(target_path)]
 
     # write out the tree
     if showtree:
@@ -148,7 +150,8 @@ def bundle(target_path,
         "num_file": num_file,
         "num_dir": num_dir,
         "bytesize": size,
-        "structure": structure
+        "structure": structure,
+        "__workdir": abspath(workdir)
     }
 
     # dump the .bundle file as a json config
@@ -164,9 +167,70 @@ def bundle(target_path,
     return build_config
 
 
+
+TEMPLATE_SHELL_LINUX = join(dirname(__file__), "templates/linux/bash")
+
+def _cmd_string_FOLDER_LINUX(prefix, path):
+    cmdstring = "{0}mkdir {1}".format(prefix, path)
+    cmdstring += "\n{0}cd {1}".format(prefix, path)
+    return cmdstring
+
+def _cmd_string_FILE_LINUX(prefix, path, b64_file_data):
+    tmp_path = path + ".b64encoded"
+    cmdstring = "\n{0}# FILE: {1} ".format(prefix, path)
+    cmdstring += "-" * (100 - len(cmdstring))
+    cmdstring += "\n{0}cat > {1} << _EOF_".format(prefix, tmp_path)
+    cmdstring += "\n{0}".format(b64_file_data)
+    cmdstring += "\n_EOF_"
+    cmdstring += "\n{0}base64 --decode {1} > {2}".format(prefix, tmp_path, path)
+    cmdstring += "\n{0}rm {1}".format(prefix, tmp_path)
+    return cmdstring
+
 def build(build_config,
+          output_file,
           workdir):
     """
     step 2
     """
-    pass
+    _start_time = time.time()
+
+    def _generate_install_cmds(structure):
+
+        def _recurse(structure, level, prefix, buf):
+            for key, value in structure.items():
+                if isinstance(value, dict):
+                    # write the mkdir cmd
+                    buf.append(_cmd_string_FOLDER_LINUX(prefix, key))
+                    _recurse(value, level + 1, prefix, buf)
+                else:
+                    # write the file install cmd
+                    buf.append(_cmd_string_FILE_LINUX(prefix, key, value))
+            # back out of the subfolder
+            buf.append("{0}cd ..".format(prefix))
+
+        buf = []
+        _recurse(structure, 0, "\t", buf)
+        return "\n".join(buf)
+
+    _write("build")
+    _write("  creating installer ... ", False)    
+
+    # generate cmd strings
+    build_config["install_cmds"] = _generate_install_cmds(build_config['structure'])
+
+    # generate the structure tree
+    build_config["structure_string"] = _build_directory_structure_string(
+        build_config['structure']
+    )
+
+    _write("ok")
+    _write("  writing project installer to {0} ... ".format(output_file), False)
+
+    with open(TEMPLATE_SHELL_LINUX, 'r') as f:
+        _template = string.Template(f.read())
+
+    with open(output_file, 'w') as f:
+        f.write(_template.safe_substitute(build_config))
+
+    _write("ok")
+    _write("build complete, {0:.2f} seconds".format(time.time() - _start_time))

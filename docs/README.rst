@@ -41,6 +41,7 @@ If installed from source, included test suite can be run with ``$ nosetests``
 Use
 ===
 pybundler has two command-line entry points:
+
 1) ``$ pybundler-bundle``
 2) ``$ pybundler-build``
 
@@ -49,6 +50,8 @@ pybundler has two command-line entry points:
 Considered step 1, ``pybundler-bundle`` command takes as main argument a directory path.
 Following said path, pybundler will create a ``.bundle`` file, of json format, detailing
 all necessary properties of the directory, for execution of the ``build`` command.
+
+For command structuring and options, use ``$ pybundler-bundle -h``
 
 **build**
 
@@ -59,4 +62,4 @@ recreate the original target directory on a system.
 At present time, only a LINUX BASH template is included. Windows BATCH format is planned
 future functionality, but as of yet, unimplemented.
 
-
+For command structuring and options, use ``$ pybundler-build -h``

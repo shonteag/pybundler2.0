@@ -35,6 +35,7 @@ Typical python module installation.
 3) ``$ python setup.py install``
 
 **Testing**
+
 If installed from source, included test suite can be run with ``$ nosetests``
 
 Use
@@ -44,11 +45,13 @@ pybundler has two command-line entry points:
 2) ``$ pybundler-build``
 
 **bundle**
+
 Considered step 1, ``pybundler-bundle`` command takes as main argument a directory path.
 Following said path, pybundler will create a ``.bundle`` file, of json format, detailing
 all necessary properties of the directory, for execution of the ``build`` command.
 
 **build**
+
 Considered step 2, ``pybundler-build`` command takes a ``.bundle`` file as main argument,
 and uses the details within to compile a "install" file (usually a bash script) which will
 recreate the original target directory on a system.
